@@ -2,7 +2,11 @@
 name = "debug-span"
 version = "0.1.0"
 edition = "2021"
-
+categories = ["development-tools::debugging", "development-tools::testing", "development-tools::procedural-macro-helpers", "text-processing"]
+description = "Visualize proc-macro2 spans for debugging and assertions"
+license = "MIT"
+keywords = ["proc-macro", "macros", "debug", "assert", "span"]
+repository = "https://github.com/smmoosavi/debug-span"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
