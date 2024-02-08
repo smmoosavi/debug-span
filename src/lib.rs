@@ -234,6 +234,17 @@ mod tests {
     use unindent::Unindent;
 
     #[test]
+    fn test_empty_span() {
+        let input = r###"
+            struct Foo;
+        "###
+        .unindent();
+        let span = proc_macro2::Span::call_site();
+        let output = debug_span(span, &input);
+        insta::assert_snapshot!(output, @"");
+    }
+
+    #[test]
     fn test_single_line() {
         let input = r###"
             struct Foo;
