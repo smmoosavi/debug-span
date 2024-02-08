@@ -48,8 +48,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-llvm-cov
 
-      - run: cargo test --workspace
+      - run: cargo llvm-cov --workspace --codecov --output-path codecov.json
+
+      - uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: codecov.json
+          fail_ci_if_error: true
 
   #################
   # Documentation #
