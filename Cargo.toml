@@ -10,9 +10,12 @@ repository = "https://github.com/smmoosavi/debug-span"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-proc-macro2 = { version = "1", features = ["span-locations"] }
+proc-macro2 = { version = "1", features = ["span-locations"], optional = true }
 
 [dev-dependencies]
 syn = "2"
 insta = "1"
 unindent = "0.2"
+
+[features]
+default = ["proc-macro2"]
