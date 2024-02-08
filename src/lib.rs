@@ -1,9 +1,72 @@
+//! This crate provides a simple way to debug proc-macro2 spans. It is useful when you are working
+//! with procedural macros and you want to see the location of a span in the source code. It can be
+//! used for testing or debugging.
+//!
+//! # Example
+//!
+//! ```rust
+//! use debug_span::debug_span;
+//! use syn::spanned::Spanned;
+//! use syn::Data;
+//! use unindent::Unindent;
+//!
+//! let input = r###"
+//!     struct Foo {
+//!         a: i32,
+//!         b: i32,
+//!     }
+//! "###
+//! .unindent();
+//! let derive_input: syn::DeriveInput = syn::parse_str(&input).unwrap();
+//! let span = match derive_input.data {
+//!     Data::Struct(s) => s.fields.span(),
+//!     _ => panic!("expected struct"),
+//! };
+//!     
+//! let output = debug_span(span, &input);
+//! insta::assert_snapshot!(output, @r###"
+//!  --> 1:11..4:1
+//!   |
+//!   |            ┌────╮
+//! 1 | struct Foo {    │
+//! 2 |     a: i32,     │
+//! 3 |     b: i32,     │
+//! 4 | }               │
+//!   | └───────────────╯
+//!   |
+//! "###);
+//! ```
+//!
+
 use crate::internal::debug_empty_span;
 use crate::internal::debug_multi_line_span;
 use crate::internal::debug_single_line_span;
 use crate::internal::is_empty_span;
 use crate::internal::is_single_line_span;
 
+/// Generate a debug representation of a `proc_macro2::Span` and the source code it points to.
+///
+/// ## Single line span example
+///
+/// ```text
+///  --> 1:7..1:10
+///   |
+/// 1 | struct Foo;
+///   |        ^^^
+/// ````
+/// ## Multi line span example
+///
+/// ```text
+/// --> 1:11..4:1
+///   |
+///   |            ┌────╮
+/// 1 | struct Foo {    │
+/// 2 |     a: i32,     │
+/// 3 |     b: i32,     │
+/// 4 | }               │
+///   | └───────────────╯
+/// ```
+///
 pub fn debug_span(span: proc_macro2::Span, code: &str) -> String {
     if is_empty_span(span) {
         debug_empty_span(span, code)

@@ -1,7 +1,6 @@
 # Debug span
 
-This crate provides a simple way to debug proc-macro2 spans. It is useful when you are working with procedural macros
-and you want to see the location of a span in the source code.
+This crate provides a simple way to debug proc-macro2 spans. It is useful when you are working with procedural macros and you want to see the location of a span in the source code. It can be used for testing or debugging.
 
 ```toml
 [dev-dependencies]
