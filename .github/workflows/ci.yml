@@ -51,6 +51,7 @@ jobs:
       - uses: taiki-e/install-action@cargo-llvm-cov
 
       - run: cargo llvm-cov --workspace --codecov --output-path codecov.json
+      - run: cargo test --workspace --doc
 
       - uses: codecov/codecov-action@v4
         with:
