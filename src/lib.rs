@@ -38,13 +38,70 @@
 //! ```
 //!
 
-use crate::internal::debug_empty_span;
-use crate::internal::debug_multi_line_span;
-use crate::internal::debug_single_line_span;
-use crate::internal::is_empty_span;
-use crate::internal::is_single_line_span;
+/// A trait for types that represent a span in the source code.
+///
+/// This trait is implemented for `proc_macro2::Span`
+pub trait Span {
+    fn start_line(&self) -> usize;
+    fn end_line(&self) -> usize;
+    fn start_column(&self) -> usize;
+    fn end_column(&self) -> usize;
 
-/// Generate a debug representation of a `proc_macro2::Span` and the source code it points to.
+    #[doc(hidden)]
+    fn is_empty(&self) -> bool {
+        self.start_line() == self.end_line() && self.start_column() == self.end_column()
+    }
+    #[doc(hidden)]
+    fn is_single_line(&self) -> bool {
+        self.start_line() == self.end_line()
+    }
+
+    /// Returns a string representation of the span in the format `start_line:start_column..end_line:end_column`
+    ///
+    /// # Example
+    ///
+    /// ```text
+    /// 1:7..1:10
+    /// ```
+    fn to_range(&self) -> String {
+        format!(
+            "{}:{}..{}:{}",
+            self.start_line(),
+            self.start_column(),
+            self.end_line(),
+            self.end_column(),
+        )
+    }
+
+    /// Generate a debug representation of the span and the source code it points to.
+    ///
+    /// see [`debug_span`] for more information.
+    fn debug(&self, code: &str) -> String {
+        internal::debug_span(self, code)
+    }
+}
+
+#[cfg(feature = "proc-macro2")]
+mod proc_macro2_span {
+    impl crate::Span for proc_macro2::Span {
+        fn start_line(&self) -> usize {
+            self.start().line
+        }
+        fn end_line(&self) -> usize {
+            self.end().line
+        }
+        fn start_column(&self) -> usize {
+            self.start().column
+        }
+        fn end_column(&self) -> usize {
+            self.end().column
+        }
+    }
+}
+
+/// Generate a debug representation of a span and the source code it points to.
+///
+/// It accepts any type that implements the [`Span`] trait. `Span` is implemented for [`proc_macro2::Span`].
 ///
 /// ## Single line span example
 ///
@@ -67,31 +124,29 @@ use crate::internal::is_single_line_span;
 ///   | └───────────────╯
 /// ```
 ///
-pub fn debug_span(span: proc_macro2::Span, code: &str) -> String {
-    if is_empty_span(span) {
-        debug_empty_span(span, code)
-    } else if is_single_line_span(span) {
-        debug_single_line_span(span, code)
-    } else {
-        debug_multi_line_span(span, code)
-    }
+pub fn debug_span(span: impl Span, code: &str) -> String {
+    internal::debug_span(&span, code)
 }
 
 #[doc(hidden)]
 pub mod internal {
-    pub fn is_empty_span(span: proc_macro2::Span) -> bool {
-        span.start() == span.end()
+    use crate::Span;
+
+    pub fn debug_span(span: &(impl Span + ?Sized), code: &str) -> String {
+        if span.is_empty() {
+            debug_empty_span(span, code)
+        } else if span.is_single_line() {
+            debug_single_line_span(span, code)
+        } else {
+            debug_multi_line_span(span, code)
+        }
     }
 
-    pub fn debug_empty_span(_span: proc_macro2::Span, _code: &str) -> String {
+    pub fn debug_empty_span(_span: &(impl Span + ?Sized), _code: &str) -> String {
         "".to_string()
     }
 
-    pub fn is_single_line_span(span: proc_macro2::Span) -> bool {
-        span.start().line == span.end().line
-    }
-
-    pub fn debug_single_line_span(span: proc_macro2::Span, code: &str) -> String {
+    pub fn debug_single_line_span(span: &(impl Span + ?Sized), code: &str) -> String {
         let empty_line = empty_line(span);
         let range_line = range_line(span);
         let code_line = code_line(span, code);
@@ -102,7 +157,7 @@ pub mod internal {
         )
     }
 
-    pub fn debug_multi_line_span(span: proc_macro2::Span, code: &str) -> String {
+    pub fn debug_multi_line_span(span: &(impl Span + ?Sized), code: &str) -> String {
         let empty_line = empty_line(span);
         let range_line = range_line(span);
         let start_line = start_line(span, code);
@@ -114,31 +169,21 @@ pub mod internal {
         )
     }
 
-    pub fn range_line(span: proc_macro2::Span) -> String {
-        let line_number_width = span.end().line.to_string().len();
-        let range = span_to_range(span);
+    pub fn range_line(span: &(impl Span + ?Sized)) -> String {
+        let line_number_width = span.end_line().to_string().len();
+        let range = span.to_range();
         format!("{:width$}--> {}", "", range, width = line_number_width,)
     }
 
-    pub fn span_to_range(span: proc_macro2::Span) -> String {
-        format!(
-            "{}:{}..{}:{}",
-            span.start().line,
-            span.start().column,
-            span.end().line,
-            span.end().column,
-        )
-    }
-
-    pub fn empty_line(span: proc_macro2::Span) -> String {
-        let line_number_width = span.end().line.to_string().len();
+    pub fn empty_line(span: &(impl Span + ?Sized)) -> String {
+        let line_number_width = span.end_line().to_string().len();
         format!("{:width$} |", "", width = line_number_width)
     }
 
-    pub fn marker_line(span: proc_macro2::Span) -> String {
-        let line_number_width = span.end().line.to_string().len();
-        let start_column = span.start().column;
-        let end_column = span.end().column;
+    pub fn marker_line(span: &(impl Span + ?Sized)) -> String {
+        let line_number_width = span.end_line().to_string().len();
+        let start_column = span.start_column();
+        let end_column = span.end_column();
 
         let marker = "^".repeat(end_column - start_column);
         format!(
@@ -151,12 +196,12 @@ pub mod internal {
         )
     }
 
-    pub fn code_line(span: proc_macro2::Span, code: &str) -> String {
-        let line_number_width = span.end().line.to_string().len();
-        let line = code.lines().nth(span.start().line - 1).unwrap();
+    pub fn code_line(span: &(impl Span + ?Sized), code: &str) -> String {
+        let line_number_width = span.end_line().to_string().len();
+        let line = code.lines().nth(span.start_line() - 1).unwrap();
         format!(
             "{:width$} | {}",
-            span.start().line,
+            span.start_line(),
             line,
             width = line_number_width,
         )
@@ -164,38 +209,40 @@ pub mod internal {
 
     const PADDING: usize = 3;
 
-    pub fn start_line(span: proc_macro2::Span, code: &str) -> String {
-        let line_number_width = span.end().line.to_string().len();
-        let start = span.start();
-        let end = span.end();
+    pub fn start_line(span: &(impl Span + ?Sized), code: &str) -> String {
+        let line_number_width = span.end_line().to_string().len();
+        let start_line = span.start_line();
+        let end_line = span.end_line();
+        let start_column = span.start_column();
+
         let lines = code
             .lines()
-            .skip(start.line - 1)
-            .take(end.line - start.line + 1);
+            .skip(start_line - 1)
+            .take(end_line - start_line + 1);
         let max_line_len = lines.map(|line| line.len()).max().unwrap();
         format!(
             "{:width$} | {}┌{}╮",
             "",
-            " ".repeat(start.column),
-            "─".repeat(max_line_len + PADDING - start.column),
+            " ".repeat(start_column),
+            "─".repeat(max_line_len + PADDING - start_column),
             width = line_number_width,
         )
     }
 
-    pub fn code_lines(span: proc_macro2::Span, code: &str) -> String {
-        let line_number_width = span.end().line.to_string().len();
-        let start = span.start();
-        let end = span.end();
+    pub fn code_lines(span: &(impl Span + ?Sized), code: &str) -> String {
+        let line_number_width = span.end_line().to_string().len();
+        let start_line = span.start_line();
+        let end_line = span.end_line();
         let lines = code
             .lines()
-            .skip(start.line - 1)
-            .take(end.line - start.line + 1);
+            .skip(start_line - 1)
+            .take(end_line - start_line + 1);
         let max_line_len = lines.clone().map(|line| line.len()).max().unwrap();
         lines
             .into_iter()
             .enumerate()
             .map(|(i, line)| {
-                let line_number = start.line + i;
+                let line_number = start_line + i;
                 format!(
                     "{: >line_number_width$} | {}{}│",
                     line_number,
@@ -207,20 +254,22 @@ pub mod internal {
             .join("\n")
     }
 
-    pub fn end_line(span: proc_macro2::Span, code: &str) -> String {
-        let line_number_width = span.end().line.to_string().len();
-        let start = span.start();
-        let end = span.end();
+    pub fn end_line(span: &(impl Span + ?Sized), code: &str) -> String {
+        let line_number_width = span.end_line().to_string().len();
+        let start_line = span.start_line();
+        let end_line = span.end_line();
+        let end_column = span.end_column();
+
         let lines = code
             .lines()
-            .skip(start.line - 1)
-            .take(end.line - start.line + 1);
+            .skip(start_line - 1)
+            .take(end_line - start_line + 1);
         let max_line_len = lines.map(|line| line.len()).max().unwrap();
         format!(
             "{:width$} | {}└{}╯",
             "",
-            " ".repeat(end.column - 1),
-            "─".repeat(max_line_len + PADDING - end.column + 1),
+            " ".repeat(end_column - 1),
+            "─".repeat(max_line_len + PADDING - end_column + 1),
             width = line_number_width,
         )
     }
@@ -390,6 +439,24 @@ mod tests {
           |
         3 |     bar: i32,
           |     ^^^
+          |
+        "###);
+    }
+
+    #[test]
+    fn test_debug_method() {
+        let input = r###"
+            struct Foo;
+        "###
+        .unindent();
+        let derive_input: syn::DeriveInput = syn::parse_str(&input).unwrap();
+        let span = derive_input.ident.span();
+        let output = span.debug(&input);
+        insta::assert_snapshot!(output, @r###"
+         --> 1:7..1:10
+          |
+        1 | struct Foo;
+          |        ^^^
           |
         "###);
     }
