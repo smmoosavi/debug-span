@@ -1,4 +1,7 @@
 allow-branch = ["main"]
+pre-release-commit-message = "chore(release): {{version}}"
+tag-message = "chore(release): {{version}}"
+
 pre-release-replacements = [
   { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}}" },
   { file = "CHANGELOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
