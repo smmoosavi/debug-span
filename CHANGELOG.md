@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - ReleaseDate
 
+## [0.2.0] - 2024-02-10
+
 ### Added
 
 - add documentation
@@ -27,5 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `debug_span` function
 
 <!-- next-url -->
-[Unreleased]: https://github.com/smmoosavi/debug-span/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/smmoosavi/debug-span/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/smmoosavi/debug-span/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/smmoosavi/debug-span/tree/v0.1.0
